@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      target: production
+    environment:
+      - NODE_ENV=production
+
+  backend:
+    environment:
+      - DEBUG=0
+      - DJANGO_SETTINGS_MODULE=secure_file_share.settings.production
+    command: gunicorn secure_file_share.wsgi:application --bind 0.0.0.0:8000
