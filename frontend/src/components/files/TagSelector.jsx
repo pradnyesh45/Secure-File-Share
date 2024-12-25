@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { TagIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect } from "react";
 import { fileApi } from "../../services/fileApi";
+import PropTypes from "prop-types";
 
 const TagSelector = ({ selectedTags, onChange }) => {
   const [tags, setTags] = useState([]);
@@ -60,6 +60,11 @@ const TagSelector = ({ selectedTags, onChange }) => {
       </div>
     </div>
   );
+};
+
+TagSelector.propTypes = {
+  selectedTags: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onChange: PropTypes.func.isRequired,
 };
 
 export default TagSelector;

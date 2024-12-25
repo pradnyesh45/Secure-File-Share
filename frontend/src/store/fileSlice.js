@@ -1,49 +1,32 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const initialState = {
-  files: [],
-  sharedFiles: [],
-  isLoading: false,
-  error: null,
-};
-
 const fileSlice = createSlice({
   name: "files",
-  initialState,
+  initialState: {
+    files: [],
+    sharedFiles: [],
+    loading: false,
+    error: null,
+  },
   reducers: {
     setFiles: (state, action) => {
       state.files = action.payload;
-      state.isLoading = false;
-      state.error = null;
+      state.loading = false;
     },
     setSharedFiles: (state, action) => {
       state.sharedFiles = action.payload;
-      state.isLoading = false;
-      state.error = null;
+      state.loading = false;
     },
     setLoading: (state, action) => {
-      state.isLoading = action.payload;
+      state.loading = action.payload;
     },
     setError: (state, action) => {
       state.error = action.payload;
-      state.isLoading = false;
-    },
-    addFile: (state, action) => {
-      state.files.push(action.payload);
-    },
-    removeFile: (state, action) => {
-      state.files = state.files.filter((file) => file.id !== action.payload);
+      state.loading = false;
     },
   },
 });
 
-export const {
-  setFiles,
-  setSharedFiles,
-  setLoading,
-  setError,
-  addFile,
-  removeFile,
-} = fileSlice.actions;
-
+export const { setFiles, setSharedFiles, setLoading, setError } =
+  fileSlice.actions;
 export default fileSlice.reducer;

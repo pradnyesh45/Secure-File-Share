@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import FileUpload from "../components/files/FileUpload";
 import FileList from "../components/files/FileList";
 import FileSearch from "../components/files/FileSearch";

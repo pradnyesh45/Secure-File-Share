@@ -1,30 +1,31 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { fileApi } from "../../services/fileApi";
+import PropTypes from "prop-types";
 
 const FilePreview = ({ file, isOpen, onClose }) => {
   const [preview, setPreview] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isOpen && file) {
-      loadPreview();
-    }
-  }, [isOpen, file]);
-
-  const loadPreview = async () => {
+  const loadPreview = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fileApi.getFilePreview(file.id);
       setPreview(response.data);
-    } catch (err) {
+    } catch {
       setError("Failed to load preview");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [file]);
+
+  useEffect(() => {
+    if (isOpen && file) {
+      loadPreview();
+    }
+  }, [isOpen, file, loadPreview]);
 
   return (
     <Dialog
@@ -79,6 +80,12 @@ const FilePreview = ({ file, isOpen, onClose }) => {
       </div>
     </Dialog>
   );
+};
+
+FilePreview.propTypes = {
+  file: PropTypes.object,
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default FilePreview;

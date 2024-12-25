@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { fileApi } from "../../services/fileApi";
-
+import PropTypes from "prop-types";
 const TagManager = ({ isOpen, onClose, onTagsUpdated }) => {
   const [tags, setTags] = useState([]);
   const [newTag, setNewTag] = useState({ name: "", color: "#3B82F6" });
@@ -20,7 +20,7 @@ const TagManager = ({ isOpen, onClose, onTagsUpdated }) => {
       setIsLoading(true);
       const response = await fileApi.getTags();
       setTags(response.data);
-    } catch (err) {
+    } catch {
       setError("Failed to load tags");
     } finally {
       setIsLoading(false);
@@ -33,7 +33,7 @@ const TagManager = ({ isOpen, onClose, onTagsUpdated }) => {
       setTags([...tags, response.data]);
       setNewTag({ name: "", color: "#3B82F6" });
       onTagsUpdated();
-    } catch (err) {
+    } catch {
       setError("Failed to create tag");
     }
   };
@@ -44,7 +44,7 @@ const TagManager = ({ isOpen, onClose, onTagsUpdated }) => {
         await fileApi.deleteTag(tagId);
         setTags(tags.filter((tag) => tag.id !== tagId));
         onTagsUpdated();
-      } catch (err) {
+      } catch {
         setError("Failed to delete tag");
       }
     }
@@ -142,6 +142,12 @@ const TagManager = ({ isOpen, onClose, onTagsUpdated }) => {
       </div>
     </Dialog>
   );
+};
+
+TagManager.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onTagsUpdated: PropTypes.func.isRequired,
 };
 
 export default TagManager;

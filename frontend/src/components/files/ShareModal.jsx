@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { fileApi } from "../../services/fileApi";
 import { ClipboardDocumentIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import PropTypes from "prop-types";
 
 const ShareModal = ({ isOpen, onClose, file }) => {
   const [shareType, setShareType] = useState("link"); // 'link' or 'user'
@@ -21,7 +22,7 @@ const ShareModal = ({ isOpen, onClose, file }) => {
         expiration_hours: parseInt(expiration),
       });
       setShareLink(response.data.share_link);
-    } catch (err) {
+    } catch {
       setError("Failed to generate sharing link");
     } finally {
       setIsLoading(false);
@@ -37,7 +38,7 @@ const ShareModal = ({ isOpen, onClose, file }) => {
         email: email,
       });
       onClose();
-    } catch (err) {
+    } catch {
       setError("Failed to share with user");
     } finally {
       setIsLoading(false);
@@ -48,7 +49,7 @@ const ShareModal = ({ isOpen, onClose, file }) => {
     try {
       await navigator.clipboard.writeText(shareLink);
       // You could add a toast notification here
-    } catch (err) {
+    } catch {
       setError("Failed to copy to clipboard");
     }
   };
@@ -84,7 +85,7 @@ const ShareModal = ({ isOpen, onClose, file }) => {
                   as="h3"
                   className="text-lg font-medium leading-6 text-gray-900 flex justify-between items-center"
                 >
-                  Share "{file?.name}"
+                  Share &quot;{file?.name}&quot;
                   <button
                     onClick={onClose}
                     className="text-gray-400 hover:text-gray-500"
@@ -198,6 +199,12 @@ const ShareModal = ({ isOpen, onClose, file }) => {
       </Dialog>
     </Transition>
   );
+};
+
+ShareModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  file: PropTypes.object,
 };
 
 export default ShareModal;

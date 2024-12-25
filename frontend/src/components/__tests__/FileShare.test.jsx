@@ -1,9 +1,10 @@
-import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import configureStore from "redux-mock-store";
 import FileShare from "../files/FileShare";
 import { fileApi } from "../../services/fileApi";
+import { describe, it, expect, beforeEach } from "@jest/globals";
+import jest from "jest-mock";
 
 jest.mock("../../services/fileApi");
 

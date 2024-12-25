@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { DocumentIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { fileApi } from "../../services/fileApi";
@@ -9,18 +9,18 @@ const SharedFiles = () => {
   const { sharedFiles, isLoading } = useSelector((state) => state.files);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadSharedFiles();
-  }, []);
-
-  const loadSharedFiles = async () => {
+  const loadSharedFiles = useCallback(async () => {
     try {
       const response = await fileApi.getSharedFiles();
       dispatch(setSharedFiles(response.data));
-    } catch (err) {
+    } catch {
       setError("Failed to load shared files");
     }
-  };
+  }, [dispatch]);
+
+  useEffect(() => {
+    loadSharedFiles();
+  }, [loadSharedFiles]);
 
   const handleDownload = async (file) => {
     try {
@@ -32,7 +32,7 @@ const SharedFiles = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (err) {
+    } catch {
       setError("Failed to download file");
     }
   };

@@ -1,182 +1,122 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setFiles, removeFile } from "../../store/fileSlice";
 import { fileApi } from "../../services/fileApi";
-import {
-  DocumentIcon,
-  TrashIcon,
-  ShareIcon,
-  ArrowDownTrayIcon,
-  EyeIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
-import ShareModal from "./ShareModal";
-import FilePreview from "./FilePreview";
-import FileVersions from "./FileVersions";
+import { setFiles, setLoading, setError } from "../../store/fileSlice";
+import { DocumentIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 
 const FileList = () => {
   const dispatch = useDispatch();
-  const { files, isLoading } = useSelector((state) => state.files);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewFile, setPreviewFile] = useState(null);
-  const [versionFile, setVersionFile] = useState(null);
+  const { files, loading, error } = useSelector((state) => state.files);
+  const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    loadFiles();
-  }, []);
-
-  const loadFiles = async () => {
+  const fetchFiles = useCallback(async () => {
+    dispatch(setLoading(true));
     try {
       const response = await fileApi.getFiles();
-      dispatch(setFiles(response.data));
+      console.log("Raw API Response:", response.data); // Debug log
+
+      // Ensure we're getting an array of files
+      const fileArray = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data.files)
+        ? response.data.files
+        : [];
+
+      console.log("Processed files array:", fileArray); // Debug log
+      dispatch(setFiles(fileArray));
     } catch (error) {
-      console.error("Failed to load files:", error);
+      console.error("Error fetching files:", error.response || error);
+      dispatch(setError("Failed to load files"));
     }
-  };
+  }, [dispatch]);
 
-  const handleDelete = async (fileId) => {
-    if (window.confirm("Are you sure you want to delete this file?")) {
-      try {
-        await fileApi.deleteFile(fileId);
-        dispatch(removeFile(fileId));
-      } catch (error) {
-        console.error("Failed to delete file:", error);
-      }
-    }
-  };
+  useEffect(() => {
+    console.log("FileList mounted");
+    fetchFiles();
+  }, [fetchFiles]);
 
-  const handleDownload = async (file) => {
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    dispatch(setLoading(true));
     try {
-      const response = await fileApi.downloadFile(file.id);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", file.name);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      await fileApi.uploadFile(file);
+      fetchFiles(); // Refresh the file list
     } catch (error) {
-      console.error("Failed to download file:", error);
+      console.error("Error uploading file:", error);
+      dispatch(setError("Failed to upload file"));
     }
   };
 
-  const handleShare = (file) => {
-    setSelectedFile(file);
-    setShareModalOpen(true);
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="text-center py-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+      <div className="flex justify-center items-center p-8 bg-white rounded-lg shadow">
+        <div className="text-lg font-semibold text-gray-700">
+          Loading files...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="text-red-700">Error: {error}</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white shadow rounded-lg">
-      <ul className="divide-y divide-gray-200">
-        {files.map((file) => (
-          <li key={file.id} className="p-4 hover:bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <DocumentIcon className="h-6 w-6 text-gray-400" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">
-                    {file.name}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(file.uploaded_at).toLocaleDateString()}
-                  </p>
+    <div>
+      <div className="mb-4 p-2 bg-blue-50 text-sm">
+        Files count: {files?.length || 0}
+        <br />
+        Loading: {loading ? "true" : "false"}
+        <br />
+        Error: {error || "none"}
+      </div>
+
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">My Files</h2>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          <ArrowUpTrayIcon className="h-5 w-5" />
+          Upload File
+        </button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8">Loading...</div>
+      ) : error ? (
+        <div className="text-red-500 py-4">{error}</div>
+      ) : !files || files.length === 0 ? (
+        <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <p className="text-gray-500">No files uploaded yet</p>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {Array.isArray(files) &&
+            files.map((file) => (
+              <li
+                key={file.id}
+                className="flex items-center justify-between p-4 bg-white rounded shadow hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center gap-3">
+                  <DocumentIcon className="h-6 w-6 text-blue-600" />
+                  <span>{file.name}</span>
                 </div>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleDownload(file)}
-                  className="p-2 text-gray-400 hover:text-gray-500"
-                >
-                  <ArrowDownTrayIcon className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => handleShare(file)}
-                  className="p-2 text-gray-400 hover:text-gray-500"
-                >
-                  <ShareIcon className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(file.id)}
-                  className="p-2 text-gray-400 hover:text-red-500"
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => setPreviewFile(file)}
-                  className="p-2 text-gray-400 hover:text-gray-500"
-                >
-                  <EyeIcon className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => setVersionFile(file)}
-                  className="p-2 text-gray-400 hover:text-gray-500"
-                >
-                  <ClockIcon className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 mt-1">
-              {file.tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs"
-                  style={{
-                    backgroundColor: `${tag.color}20`,
-                    color: tag.color,
-                  }}
-                >
-                  <div
-                    className="w-1.5 h-1.5 rounded-full mr-1"
-                    style={{ backgroundColor: tag.color }}
-                  />
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          </li>
-        ))}
-        {files.length === 0 && (
-          <li className="p-4 text-center text-gray-500">
-            No files uploaded yet
-          </li>
-        )}
-      </ul>
-
-      {shareModalOpen && selectedFile && (
-        <ShareModal
-          isOpen={shareModalOpen}
-          onClose={() => {
-            setShareModalOpen(false);
-            setSelectedFile(null);
-          }}
-          file={selectedFile}
-        />
-      )}
-
-      {previewFile && (
-        <FilePreview
-          file={previewFile}
-          isOpen={!!previewFile}
-          onClose={() => setPreviewFile(null)}
-        />
-      )}
-
-      {versionFile && (
-        <FileVersions
-          file={versionFile}
-          isOpen={!!versionFile}
-          onClose={() => setVersionFile(null)}
-          onVersionRestored={loadFiles}
-        />
+              </li>
+            ))}
+        </ul>
       )}
     </div>
   );

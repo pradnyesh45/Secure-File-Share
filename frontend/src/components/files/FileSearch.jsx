@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-  SearchIcon,
+  MagnifyingGlassIcon as SearchIcon,
   AdjustmentsHorizontalIcon,
 } from "@heroicons/react/24/outline";
 import { Popover } from "@headlessui/react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import PropTypes from "prop-types";
 
 const FileSearch = ({ onSearch }) => {
   const [searchText, setSearchText] = useState("");
@@ -186,6 +187,10 @@ const FileSearch = ({ onSearch }) => {
       </div>
     </div>
   );
+};
+
+FileSearch.propTypes = {
+  onSearch: PropTypes.func.isRequired,
 };
 
 export default FileSearch;

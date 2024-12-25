@@ -1,51 +1,56 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { setCredentials } from "../../store/authSlice";
-import { authApi } from "../../services/api";
+import { setUser, setToken } from "../../store/authSlice";
+import { authApi } from "../../services/authApi";
 
 const Login = () => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
+    setLoading(true);
     try {
       const response = await authApi.login(formData);
+      // Store the tokens
       dispatch(
-        setCredentials({
-          user: response.data.user,
-          token: response.data.access,
-          mfaRequired: response.data.mfa_required,
+        setToken({
+          access: response.data.access,
+          refresh: response.data.refresh,
         })
       );
 
-      if (response.data.mfa_required) {
-        navigate("/mfa-verify");
-      } else {
-        navigate(from, { replace: true });
-      }
-    } catch (err) {
-      setError(err.response?.data?.detail || "Login failed");
+      // Set the default Authorization header for future requests
+      authApi.setAuthHeader(response.data.access);
+
+      // You might want to fetch user details here if needed
+      dispatch(
+        setUser({
+          username: formData.username,
+          // Add other user details as needed
+        })
+      );
+
+      navigate("/");
+    } catch (error) {
+      console.error("Login error:", error);
+      // Handle login error (show message to user)
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   return (
@@ -56,21 +61,10 @@ const Login = () => {
             Sign in to your account
           </h2>
         </div>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            {error}
-          </div>
-        )}
-
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="username" className="sr-only">
-                Username
-              </label>
               <input
-                id="username"
                 name="username"
                 type="text"
                 required
@@ -81,11 +75,7 @@ const Login = () => {
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
               <input
-                id="password"
                 name="password"
                 type="password"
                 required
@@ -100,14 +90,10 @@ const Login = () => {
           <div>
             <button
               type="submit"
-              disabled={isLoading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                isLoading
-                  ? "bg-indigo-400"
-                  : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              }`}
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {loading ? "Signing in..." : "Sign in"}
             </button>
           </div>
 
@@ -116,7 +102,7 @@ const Login = () => {
               to="/register"
               className="font-medium text-indigo-600 hover:text-indigo-500"
             >
-              Don't have an account? Register
+              Don&apos;t have an account? Register
             </Link>
           </div>
         </form>

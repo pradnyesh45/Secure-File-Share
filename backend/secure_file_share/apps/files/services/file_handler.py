@@ -1,57 +1,51 @@
 import os
+from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from .encryption import FileEncryptionService
+from cryptography.fernet import Fernet
 
 class FileHandler:
     def __init__(self):
-        self.encryption_service = FileEncryptionService()
+        self.key = settings.FILE_ENCRYPTION_KEY.encode()
+        self.cipher_suite = Fernet(self.key)
 
-    def save_file(self, file_obj, user):
+    def save_file(self, file, owner):
         """Save and encrypt a file."""
-        # Read the file content
-        file_content = file_obj.read()
+        # Read file content
+        file_content = file.read()
         
-        # Generate encryption key for this file
-        key_data = self.encryption_service.generate_file_key()
+        # Encrypt the content
+        encrypted_content = self.cipher_suite.encrypt(file_content)
         
-        # Encrypt the file content
-        encrypted_content = self.encryption_service.encrypt_file(
-            file_content,
-            key_data['key']
-        )
+        # Generate a unique file path
+        file_path = f'uploads/{owner.id}/{file.name}'
         
-        # Generate a secure filename
-        filename = f"{os.urandom(16).hex()}{os.path.splitext(file_obj.name)[1]}"
-        
-        # Save the encrypted file
-        path = default_storage.save(
-            f"uploads/{filename}",
-            ContentFile(encrypted_content)
-        )
+        # Save the encrypted content
+        default_storage.save(file_path, ContentFile(encrypted_content))
         
         return {
-            'path': path,
-            'key': key_data['key'],
-            'salt': key_data['salt'],
-            'original_name': file_obj.name,
-            'content_type': file_obj.content_type,
-            'size': file_obj.size
+            'path': file_path,
+            'key': self.key,
+            'content_type': file.content_type,
+            'size': file.size
         }
 
     def read_file(self, file_path, encryption_key):
         """Read and decrypt a file."""
+        if not default_storage.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+            
+        # Read the encrypted content
         with default_storage.open(file_path, 'rb') as f:
             encrypted_content = f.read()
             
-        return self.encryption_service.decrypt_file(
-            encrypted_content,
-            encryption_key
-        )
+        # Decrypt the content
+        cipher_suite = Fernet(encryption_key)
+        decrypted_content = cipher_suite.decrypt(encrypted_content)
+        
+        return decrypted_content
 
     def delete_file(self, file_path):
-        """Securely delete a file."""
+        """Delete a file from storage."""
         if default_storage.exists(file_path):
-            # In a production environment, you might want to implement
-            # secure deletion by overwriting the file before deleting
             default_storage.delete(file_path) 

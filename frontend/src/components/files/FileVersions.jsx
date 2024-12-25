@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog } from "@headlessui/react";
 import { XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { fileApi } from "../../services/fileApi";
+import PropTypes from "prop-types";
 
 const FileVersions = ({ file, isOpen, onClose, onVersionRestored }) => {
   const [versions, setVersions] = useState([]);
@@ -9,23 +10,23 @@ const FileVersions = ({ file, isOpen, onClose, onVersionRestored }) => {
   const [error, setError] = useState(null);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && file) {
-      loadVersions();
-    }
-  }, [isOpen, file]);
-
-  const loadVersions = async () => {
+  const loadVersions = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fileApi.getFileVersions(file.id);
       setVersions(response.data);
-    } catch (err) {
+    } catch {
       setError("Failed to load versions");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [file]);
+
+  useEffect(() => {
+    if (isOpen && file) {
+      loadVersions();
+    }
+  }, [isOpen, file, loadVersions]);
 
   const handleRestore = async (versionNumber) => {
     if (window.confirm(`Restore to version ${versionNumber}?`)) {
@@ -34,7 +35,7 @@ const FileVersions = ({ file, isOpen, onClose, onVersionRestored }) => {
         await fileApi.restoreVersion(file.id, versionNumber);
         onVersionRestored();
         onClose();
-      } catch (err) {
+      } catch {
         setError("Failed to restore version");
       } finally {
         setIsRestoring(false);
@@ -114,6 +115,13 @@ const FileVersions = ({ file, isOpen, onClose, onVersionRestored }) => {
       </div>
     </Dialog>
   );
+};
+
+FileVersions.propTypes = {
+  file: PropTypes.object,
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onVersionRestored: PropTypes.func.isRequired,
 };
 
 export default FileVersions;

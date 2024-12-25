@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { fileApi } from "../../services/fileApi";
@@ -9,11 +9,7 @@ const SharedLink = () => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadSharedFile();
-  }, [token]);
-
-  const loadSharedFile = async () => {
+  const loadSharedFile = useCallback(async () => {
     try {
       const response = await fileApi.getSharedFileByToken(token);
       setFile(response.data);
@@ -24,7 +20,11 @@ const SharedLink = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    loadSharedFile();
+  }, [loadSharedFile]);
 
   const handleDownload = async () => {
     try {
@@ -36,7 +36,7 @@ const SharedLink = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (err) {
+    } catch {
       setError("Failed to download file");
     }
   };

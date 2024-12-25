@@ -23,7 +23,8 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+    netcat-traditional && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy wheels from builder
 COPY --from=builder /app/wheels /wheels
@@ -33,10 +34,17 @@ RUN pip install --no-cache /wheels/*
 # Copy project
 COPY . .
 
+# Add the project directory to PYTHONPATH
+ENV PYTHONPATH=/app:$PYTHONPATH
+
 # Create media directory
 RUN mkdir -p media/uploads media/previews
 
-# Create non-root user
+# Setup entrypoint
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+# Create non-root user and set permissions
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
@@ -44,4 +52,4 @@ USER appuser
 EXPOSE 8000
 
 # Run migrations and start server
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+ENTRYPOINT ["/app/entrypoint.sh"]
